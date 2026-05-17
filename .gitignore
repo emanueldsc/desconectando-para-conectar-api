@@ -23,12 +23,8 @@ yarn-error.log
 /public/css/app.css
 /public/js/app.js
 /public/build/
-.env.backup
-.env.local
-.env.development
-.env.production
-.env.testing
-.env.example
+# Environment files (but NOT .env.example - that should be committed!)
+# .env.example is tracked for reference; local variants are ignored via /.env.* above
 /.DS_Store
 Thumbs.db
 *.sublime-workspace
