@@ -1,0 +1,149 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\BlogPost;
+use App\Models\Institution;
+use App\Models\Raffle;
+use Illuminate\Http\JsonResponse;
+use OpenApi\Attributes as OA;
+
+class PublicController extends Controller
+{
+    #[OA\Get(
+        path: '/api/public/home',
+        summary: 'Get public home data',
+        tags: ['Public'],
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Successful response',
+                content: new OA\JsonContent(
+                    type: 'object',
+                    properties: [
+                        new OA\Property(property: 'hero', type: 'object'),
+                        new OA\Property(property: 'featuredRaffles', type: 'array', items: new OA\Items(type: 'object')),
+                        new OA\Property(property: 'institutions', type: 'array', items: new OA\Items(type: 'object')),
+                        new OA\Property(property: 'statistics', type: 'object'),
+                        new OA\Property(property: 'blogPreview', type: 'array', items: new OA\Items(type: 'object')),
+                    ]
+                )
+            ),
+        ]
+    )]
+    public function getHome(): JsonResponse
+    {
+        return response()->json([
+            'hero' => [
+                'title' => 'Desconectando para Conectar',
+                'subtitle' => 'Uma iniciativa solidária para o Sertão Nordestino',
+                'backgroundImage' => 'https://cdn.exemplo.com/hero-bg.jpg',
+                'ctaLabel' => 'Participar Agora',
+                'ctaLink' => '/public/raffles',
+            ],
+            'featuredRaffles' => $this->featuredRaffles(),
+            'institutions' => $this->institutions(),
+            'statistics' => $this->statistics(),
+            'blogPreview' => $this->blogPreview(),
+        ]);
+    }
+
+    private function featuredRaffles(): array
+    {
+        return Raffle::query()
+            ->with('organization')
+            ->where(function ($query): void {
+                $query->where('status', 'active')->orWhere('featured', true);
+            })
+            ->latest('draw_date')
+            ->limit(3)
+            ->get()
+            ->map(fn (Raffle $raffle): array => $this->formatFeaturedRaffle($raffle))
+            ->all();
+    }
+
+    private function institutions(): array
+    {
+        return Institution::query()
+            ->active()
+            ->latest()
+            ->limit(4)
+            ->get()
+            ->map(fn (Institution $institution): array => [
+                'id' => $institution->id,
+                'name' => $institution->name,
+                'description' => $institution->description,
+                'image' => $institution->image,
+                'imagePosition' => $institution->image_position,
+            ])
+            ->all();
+    }
+
+    private function statistics(): array
+    {
+        return [
+            'totalDonated' => (float) Raffle::query()->sum('current'),
+            'livesImpacted' => (int) Raffle::query()->sum('tickets_sold'),
+            'communitiesReached' => Institution::query()->active()->count(),
+        ];
+    }
+
+    private function blogPreview(): array
+    {
+        return BlogPost::query()
+            ->published()
+            ->with('author')
+            ->latest('published_at')
+            ->limit(3)
+            ->get()
+            ->map(fn (BlogPost $post): array => $this->formatBlogPreview($post))
+            ->all();
+    }
+
+    private function formatFeaturedRaffle(Raffle $raffle): array
+    {
+        return [
+            'id' => $raffle->id,
+            'title' => $raffle->title,
+            'description' => $raffle->description,
+            'image' => $raffle->image,
+            'progress' => $this->progress($raffle->current, $raffle->goal),
+            'goal' => (float) $raffle->goal,
+            'current' => (float) $raffle->current,
+            'status' => $raffle->status,
+            'drawDate' => $raffle->draw_date?->toISOString(),
+            'category' => $raffle->category,
+        ];
+    }
+
+    private function formatBlogPreview(BlogPost $post): array
+    {
+        return [
+            'id' => $post->id,
+            'title' => $post->title,
+            'excerpt' => $post->excerpt ?? str($post->content)->stripTags()->limit(220)->toString(),
+            'image' => $post->featured_image,
+            'imageAlt' => $post->image_alt,
+            'eyebrow' => $post->eyebrow ?? $post->category,
+            'description' => $post->title,
+            'slug' => $post->slug,
+            'publishedAt' => $post->published_at?->toISOString(),
+            'readTime' => $this->estimateReadTime($post->content),
+        ];
+    }
+
+    private function progress(float|int $current, float|int $goal): int
+    {
+        if ((float) $goal <= 0) {
+            return 0;
+        }
+
+        return (int) min(100, round(((float) $current / (float) $goal) * 100));
+    }
+
+    private function estimateReadTime(string $content): int
+    {
+        return max(1, (int) ceil(str_word_count(strip_tags($content)) / 200));
+    }
+}

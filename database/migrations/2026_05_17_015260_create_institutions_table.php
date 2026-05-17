@@ -1,0 +1,28 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('institutions', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name');
+            $table->text('description');
+            $table->string('logo')->nullable();
+            $table->string('image');
+            $table->string('image_position')->default('center center');
+            $table->json('contact')->nullable();
+            $table->enum('status', ['active', 'inactive'])->default('active');
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('institutions');
+    }
+};

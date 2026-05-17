@@ -1,0 +1,54 @@
+services:
+  # Servidor de Banco de Dados PostgreSQL
+  db:
+    image: postgres:16-alpine
+    container_name: desconectando_postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: desconectando_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d desconectando_db"]
+      timeout: 20s
+      retries: 10
+    networks:
+      - desconectando_network
+
+  # Gerenciador de Banco de Dados Web (DbGate)
+  dbgate:
+    image: dbgate/dbgate:latest
+    container_name: desconectando_dbgate
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      CONNECTIONS: postgres_docker
+      LABEL_postgres_docker: "Desconectando DB"
+
+      ENGINE_postgres_docker: postgres@dbgate-plugin-postgres
+
+      HOST_postgres_docker: db
+      PORT_postgres_docker: 5432
+      USER_postgres_docker: postgres
+      PASSWORD_postgres_docker: postgres
+      DATABASE_postgres_docker: desconectando_db
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - desconectando_network
+
+# Volumes para garantir que seus dados não sumam quando o container parar
+volumes:
+  postgres_data:
+    driver: local
+
+# Rede virtual para isolar e permitir a comunicação entre os containers
+networks:
+  desconectando_network:
+    driver: bridge

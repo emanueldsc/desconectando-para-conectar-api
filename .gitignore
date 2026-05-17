@@ -1,0 +1,89 @@
+# Laravel & PHP .gitignore
+# See https://github.com/github/gitignore/blob/main/Laravel.gitignore for updates
+
+/vendor/
+/node_modules/
+/public/storage
+/storage/*.key
+/.env
+/.env.*
+/.idea/
+/.vscode/
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log
+.phpunit.result.cache
+/storage/logs/
+/storage/framework/
+/storage/app/public/
+/public/hot
+/public/storage
+/public/mix-manifest.json
+/public/css/app.css
+/public/js/app.js
+/public/build/
+.env.backup
+.env.local
+.env.development
+.env.production
+.env.testing
+.env.example
+/.DS_Store
+Thumbs.db
+*.sublime-workspace
+*.sublime-project
+*.swp
+*.bak
+*.tmp
+*.log
+
+# Composer
+composer.phar
+
+# Laravel Telescope
+storage/telescope
+
+# Laravel Horizon
+storage/horizon
+
+# Laravel Nova
+nova-components/
+
+# Laravel Mix
+/public/js/manifest.js
+/public/js/vendor.js
+/public/css/vendor.css
+
+# Laravel Swoole
+storage/swoole
+
+# Laravel Octane
+storage/octane
+
+# Laravel Valet
+/.valet/
+
+# Misc
+.env.save
+.env.bak
+.env.old
+.envrc
+
+# Ignore test coverage
+coverage/
+
+# Ignore IDE and OS files
+.idea/
+.vscode/
+*.iml
+*.sublime*
+.DS_Store
+Thumbs.db
+
+# Ignore Docker files
+.docker/
+.docker-compose*
+
+# Ignore Swagger generated docs
+storage/api-docs/
