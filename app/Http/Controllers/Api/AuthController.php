@@ -13,6 +13,10 @@ use OpenApi\Attributes as OA;
 
 class AuthController extends Controller
 {
+    private const INTERNAL_ROLES = ['manager', 'publisher'];
+
+    private const MEMBER_ROLE = 'buyer';
+
     #[OA\Post(
         path: '/api/auth/register',
         summary: 'Register a new user',
@@ -47,12 +51,76 @@ class AuthController extends Controller
     )]
     public function register(Request $request): JsonResponse
     {
+        return $this->registerMember($request);
+    }
+
+    #[OA\Post(
+        path: '/api/auth/register/internal',
+        summary: 'Register an internal admin user (manager or publisher)',
+        tags: ['Auth'],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                type: 'object',
+                properties: [
+                    new OA\Property(property: 'name', type: 'string'),
+                    new OA\Property(property: 'email', type: 'string'),
+                    new OA\Property(property: 'password', type: 'string'),
+                    new OA\Property(property: 'password_confirmation', type: 'string'),
+                    new OA\Property(property: 'role', type: 'string', enum: ['manager', 'publisher']),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 201, description: 'Internal user registered successfully'),
+            new OA\Response(response: 422, description: 'Validation error'),
+        ]
+    )]
+    public function registerInternal(Request $request): JsonResponse
+    {
+        return $this->registerUser($request, true);
+    }
+
+    #[OA\Post(
+        path: '/api/auth/register/member',
+        summary: 'Register a member user (donor and raffle buyer)',
+        tags: ['Auth'],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                type: 'object',
+                properties: [
+                    new OA\Property(property: 'name', type: 'string'),
+                    new OA\Property(property: 'email', type: 'string'),
+                    new OA\Property(property: 'password', type: 'string'),
+                    new OA\Property(property: 'password_confirmation', type: 'string'),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(response: 201, description: 'Member registered successfully'),
+            new OA\Response(response: 422, description: 'Validation error'),
+        ]
+    )]
+    public function registerMember(Request $request): JsonResponse
+    {
+        return $this->registerUser($request, false);
+    }
+
+    private function registerUser(Request $request, bool $isInternal): JsonResponse
+    {
+        $rules = [
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ];
+
+        if ($isInternal) {
+            $rules['role'] = ['required', 'string', 'in:'.implode(',', self::INTERNAL_ROLES)];
+        }
+
         try {
-            $validated = $request->validate([
-                'name' => ['required', 'string', 'max:255'],
-                'email' => ['required', 'email', 'unique:users,email'],
-                'password' => ['required', 'string', 'min:8', 'confirmed'],
-            ]);
+            $validated = $request->validate($rules);
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
@@ -63,16 +131,23 @@ class AuthController extends Controller
         }
 
         try {
+            $role = $isInternal
+                ? $validated['role']
+                : self::MEMBER_ROLE;
+
             $user = User::create([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
+                'role' => $role,
                 'status' => 'active',
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Usuário registrado com sucesso',
+                'message' => $isInternal
+                    ? 'Usuário administrativo registrado com sucesso'
+                    : 'Membro registrado com sucesso',
                 'user' => $this->formatUser($user),
             ], 201);
         } catch (\Exception $e) {

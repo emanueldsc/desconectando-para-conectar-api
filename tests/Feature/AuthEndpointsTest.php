@@ -11,6 +11,65 @@ class AuthEndpointsTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_register_member_creates_buyer_user(): void
+    {
+        $response = $this->postJson('/api/auth/register/member', [
+            'name' => 'Maria doadora',
+            'email' => 'maria.member@exemplo.com',
+            'password' => 'senha1234',
+            'password_confirmation' => 'senha1234',
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('user.email', 'maria.member@exemplo.com')
+            ->assertJsonPath('user.role', 'buyer');
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'maria.member@exemplo.com',
+            'role' => 'buyer',
+            'status' => 'active',
+        ]);
+    }
+
+    public function test_register_internal_creates_admin_user_with_manager_or_publisher_role(): void
+    {
+        $response = $this->postJson('/api/auth/register/internal', [
+            'name' => 'Carlos gestor',
+            'email' => 'carlos.manager@exemplo.com',
+            'password' => 'senha1234',
+            'password_confirmation' => 'senha1234',
+            'role' => 'manager',
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('user.email', 'carlos.manager@exemplo.com')
+            ->assertJsonPath('user.role', 'manager');
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'carlos.manager@exemplo.com',
+            'role' => 'manager',
+            'status' => 'active',
+        ]);
+    }
+
+    public function test_register_internal_rejects_non_admin_role(): void
+    {
+        $response = $this->postJson('/api/auth/register/internal', [
+            'name' => 'Joana invalida',
+            'email' => 'joana.invalid@exemplo.com',
+            'password' => 'senha1234',
+            'password_confirmation' => 'senha1234',
+            'role' => 'buyer',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('code', 'VALIDATION_ERROR')
+            ->assertJsonStructure(['errors' => ['role']]);
+    }
+
     public function test_login_returns_token_and_user_payload(): void
     {
         $user = User::query()->create([

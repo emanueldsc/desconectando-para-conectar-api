@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\BlogPost;
+use App\Models\CmsSetting;
 use App\Models\Institution;
 use App\Models\Raffle;
 use App\Models\User;
@@ -21,9 +22,65 @@ class ApiPublicEndpointsTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('hero.title', 'Desconectando para Conectar')
+            ->assertJsonCount(0, 'impactPhrases')
+            ->assertJsonPath('realitySection.title', 'Nossa Realidade')
+            ->assertJsonCount(4, 'realitySection.publications')
             ->assertJsonCount(3, 'featuredRaffles')
             ->assertJsonCount(4, 'institutions')
             ->assertJsonCount(3, 'blogPreview');
+    }
+
+    public function test_home_endpoint_uses_cms_banner_and_phrase_when_available(): void
+    {
+        $this->seedPublicData();
+
+        CmsSetting::query()->create([
+            'banners' => [
+                [
+                    'url' => 'https://cdn.exemplo.com/cms/banner-home.jpg',
+                    'alt' => 'Banner da home',
+                    'label' => 'Principal',
+                ],
+            ],
+            'phrases' => [
+                'Frase vinda do CMS para a home pública.',
+            ],
+            'contact' => [
+                'email' => 'contato@exemplo.com',
+                'whatsapp' => '(81) 99999-9999',
+                'phone' => '(81) 3000-0000',
+            ],
+            'socials' => [
+                'instagram' => '',
+                'facebook' => '',
+                'youtube' => '',
+            ],
+            'hero_button' => [
+                'label' => 'Conhecer Agora',
+                'link' => '/public/blog',
+                'icon' => 'campaign',
+                'backgroundColor' => '#0058bd',
+                'textColor' => '#ffffff',
+            ],
+            'home_reality' => [
+                'title' => 'Nossa Realidade',
+                'subtitle' => 'Publicações em destaque selecionadas pelo CMS.',
+                'displayMode' => 'selected',
+                'publicationIds' => [1, 3],
+            ],
+        ]);
+
+        $response = $this->getJson('/api/public/home');
+
+        $response->assertOk()
+            ->assertJsonPath('hero.backgroundImage', 'https://cdn.exemplo.com/cms/banner-home.jpg')
+            ->assertJsonPath('hero.subtitle', 'Frase vinda do CMS para a home pública.')
+            ->assertJsonPath('hero.ctaLabel', 'Conhecer Agora')
+            ->assertJsonPath('hero.ctaIcon', 'campaign')
+            ->assertJsonPath('impactPhrases.0', 'Frase vinda do CMS para a home pública.')
+            ->assertJsonPath('realitySection.displayMode', 'selected')
+            ->assertJsonPath('realitySection.publications.0.id', 1)
+            ->assertJsonPath('realitySection.publications.1.id', 3);
     }
 
     public function test_blog_list_returns_pagination_and_categories(): void

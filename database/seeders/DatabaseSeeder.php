@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             InstitutionSeeder::class,
             BlogPostSeeder::class,
             RaffleSeeder::class,
+            CmsSettingSeeder::class,
         ]);
     }
 }
