@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Institution;
 use App\Models\Raffle;
+use App\Models\RaffleReservation;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -216,6 +217,15 @@ class AdminRaffleController extends Controller
         $raffle->tickets_sold = min((int) $raffle->tickets_available, (int) $raffle->tickets_sold + 1);
         $raffle->current = ((int) $raffle->tickets_sold) * (float) $raffle->ticket_price;
         $raffle->save();
+
+        $reservation = RaffleReservation::where('raffle_id', $raffle->id)
+            ->where('number', $number)
+            ->first();
+
+        if ($reservation !== null) {
+            $reservation->status = 'paid';
+            $reservation->save();
+        }
 
         return response()->json([
             'success' => true,

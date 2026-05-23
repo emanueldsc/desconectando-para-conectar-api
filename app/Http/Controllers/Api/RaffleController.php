@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Raffle;
+use App\Models\RaffleReservation;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use OpenApi\Attributes as OA;
@@ -70,6 +72,16 @@ class RaffleController extends Controller
 
         $raffle->numbers = array_values($numbers);
         $raffle->save();
+
+        $user = Auth::guard('sanctum')->user() ?? $request->user();
+        if ($user !== null) {
+            RaffleReservation::create([
+                'user_id' => $user->id,
+                'raffle_id' => $raffle->id,
+                'number' => $number,
+                'status' => 'reserved',
+            ]);
+        }
 
         return response()->json([
             'success' => true,

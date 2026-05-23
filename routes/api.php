@@ -36,7 +36,7 @@ Route::prefix('auth')->group(function (): void {
 
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::prefix('member')->group(function (): void {
-        Route::get('/profile', fn () => response()->json(['message' => 'Not implemented yet'], 501));
+        Route::get('/profile', [\App\Http\Controllers\Api\MemberController::class, 'profile']);
         Route::get('/raffles', [\App\Http\Controllers\Api\MemberController::class, 'raffles']);
         Route::get('/donations', [\App\Http\Controllers\Api\MemberController::class, 'donations']);
         Route::put('/profile', fn () => response()->json(['message' => 'Not implemented yet'], 501));
