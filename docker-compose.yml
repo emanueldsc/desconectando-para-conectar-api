@@ -32,7 +32,7 @@ services:
 
       ENGINE_postgres_docker: postgres@dbgate-plugin-postgres
 
-      HOST_postgres_docker: db
+      SERVER_postgres_docker: db
       PORT_postgres_docker: 5432
       USER_postgres_docker: postgres
       PASSWORD_postgres_docker: postgres

@@ -18,10 +18,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'current',
     'status',
     'draw_date',
+    'extraction_number',
     'category',
     'ticket_price',
     'tickets_available',
     'tickets_sold',
+    'reservation_timeout_minutes',
     'organization_id',
     'rules',
     'numbers',
@@ -44,7 +46,9 @@ class Raffle extends Model
             'goal' => 'decimal:2',
             'current' => 'decimal:2',
             'ticket_price' => 'decimal:2',
+            'reservation_timeout_minutes' => 'integer',
             'draw_date' => 'datetime',
+            'extraction_number' => 'integer',
             'featured' => 'boolean',
         ];
     }

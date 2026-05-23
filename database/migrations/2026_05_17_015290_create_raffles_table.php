@@ -19,7 +19,7 @@ return new class extends Migration
             $table->decimal('goal', 12, 2);
             $table->decimal('current', 12, 2)->default(0);
             $table->enum('status', ['active', 'coming', 'finished'])->default('coming');
-            $table->timestamp('draw_date');
+            $table->timestamp('draw_date')->nullable();
             $table->string('category');
             $table->decimal('ticket_price', 10, 2);
             $table->unsignedInteger('tickets_available');

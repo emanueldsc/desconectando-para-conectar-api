@@ -8,6 +8,8 @@ use App\Models\Institution;
 use App\Models\Raffle;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ApiPublicEndpointsTest extends TestCase
@@ -172,6 +174,28 @@ class ApiPublicEndpointsTest extends TestCase
             ]);
     }
 
+    public function test_raffles_list_can_include_finished_raffles(): void
+    {
+        $this->seedPublicData();
+
+        $response = $this->getJson('/api/public/raffles?includeOld=true');
+
+        $response->assertOk()
+            ->assertJsonPath('pagination.total', 3);
+    }
+
+    public function test_raffles_list_can_filter_finished_raffles_by_extraction_number(): void
+    {
+        $this->seedPublicData();
+
+        $response = $this->getJson('/api/public/raffles?status=finished&includeOld=true&extractionNumber=1234&limit=10');
+
+        $response->assertOk()
+            ->assertJsonPath('pagination.total', 1)
+            ->assertJsonPath('data.0.extractionNumber', 1234)
+            ->assertJsonPath('data.0.winnerName', 'Maria da Silva');
+    }
+
     public function test_raffle_single_can_be_loaded_by_slug(): void
     {
         $this->seedPublicData();
@@ -205,6 +229,36 @@ class ApiPublicEndpointsTest extends TestCase
                 'seo' => ['metaDescription', 'keywords'],
                 'winnerInfo',
             ]);
+    }
+
+    public function test_public_user_can_reserve_number_and_upload_receipt(): void
+    {
+        Storage::fake('public');
+        $this->seedPublicData();
+
+        $reserveResponse = $this->postJson('/api/public/raffles/1/numbers/1/reserve', [
+            'buyerName' => 'Cliente Teste',
+            'buyerPhone' => '(81) 90000-0000',
+        ]);
+
+        $reserveResponse->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.number', 1);
+
+        $reservationCode = (string) $reserveResponse->json('data.reservationCode');
+
+        $file = UploadedFile::fake()->create('comprovante.jpg', 256, 'image/jpeg');
+
+        $receiptResponse = $this->postJson('/api/public/raffles/1/numbers/1/receipt', [
+            'reservationCode' => $reservationCode,
+            'receipt' => $file,
+        ]);
+
+        $receiptResponse->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.paymentStatus', 'pending_review');
+
+        $this->assertTrue(Storage::disk('public')->exists('raffle-receipts/'.$file->hashName()));
     }
 
     private function seedPublicData(): void
@@ -367,6 +421,7 @@ class ApiPublicEndpointsTest extends TestCase
             'current' => 12000,
             'status' => 'finished',
             'draw_date' => now()->subMonths(7),
+            'extraction_number' => 1234,
             'category' => 'Infraestrutura',
             'ticket_price' => 20,
             'tickets_available' => 12000,
@@ -378,6 +433,7 @@ class ApiPublicEndpointsTest extends TestCase
                 'id' => 1,
                 'name' => 'Maria da Silva',
                 'winnerNumber' => 2,
+                'extractionNumber' => 1234,
                 'drawDate' => now()->subMonths(7)->toISOString(),
                 'prize' => 'Poço concluído',
             ],
