@@ -9,7 +9,7 @@ use OpenApi\Attributes as OA;
 	description: 'Documentacao oficial da API do projeto Desconectando para Conectar.'
 )]
 #[OA\Server(
-	url: 'L5_SWAGGER_CONST_HOST',
+	url: '/',
 	description: 'Servidor Principal'
 )]
 class SwaggerConfig
