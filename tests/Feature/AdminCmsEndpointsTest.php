@@ -39,6 +39,7 @@ class AdminCmsEndpointsTest extends TestCase
                     'socials' => ['instagram', 'facebook', 'youtube'],
                     'heroButton' => ['label', 'link', 'icon', 'backgroundColor', 'textColor'],
                     'realitySection' => ['title', 'subtitle', 'displayMode', 'publicationIds'],
+                    'monthlyGoal',
                     'updatedAt',
                 ],
                 'availablePublications',
@@ -91,6 +92,7 @@ class AdminCmsEndpointsTest extends TestCase
                 'displayMode' => 'latest',
                 'publicationIds' => [],
             ],
+            'monthlyGoal' => 35000,
         ];
 
         $response = $this->putJson('/api/admin/cms', $payload);
@@ -102,7 +104,8 @@ class AdminCmsEndpointsTest extends TestCase
             ->assertJsonPath('data.banners.0.label', 'Campanha Atual')
             ->assertJsonPath('data.phrases.0', 'Nova frase de impacto')
             ->assertJsonPath('data.heroButton.label', 'Doar Agora')
-            ->assertJsonPath('data.realitySection.title', 'Nossa Realidade');
+            ->assertJsonPath('data.realitySection.title', 'Nossa Realidade')
+            ->assertJsonPath('data.monthlyGoal', 35000);
     }
 
     public function test_member_user_cannot_access_cms_endpoints(): void
@@ -220,6 +223,7 @@ class AdminCmsEndpointsTest extends TestCase
                 'displayMode' => 'latest',
                 'publicationIds' => [],
             ],
+            'monthly_goal' => 20000,
         ]);
 
         $user = User::query()->create([
@@ -264,6 +268,7 @@ class AdminCmsEndpointsTest extends TestCase
                     'displayMode' => 'latest',
                     'publicationIds' => [],
                 ],
+                'monthlyGoal' => 25000,
         ]);
 
         $response->assertOk()

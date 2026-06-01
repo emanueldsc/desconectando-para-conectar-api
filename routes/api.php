@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AdminBlogController;
 use App\Http\Controllers\Api\AdminCmsController;
+use App\Http\Controllers\Api\AdminGeneralController;
 use App\Http\Controllers\Api\AdminRaffleController;
 use App\Http\Controllers\Api\AdminDonationController;
 use App\Http\Controllers\Api\AdminUserController;
@@ -44,6 +45,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     Route::prefix('admin')->group(function (): void {
         Route::get('/health', fn () => response()->json(['message' => 'Not implemented yet'], 501));
+        Route::get('/overview', [AdminGeneralController::class, 'overview']);
         Route::get('/users', [AdminUserController::class, 'index']);
         Route::post('/users', [AdminUserController::class, 'store']);
         Route::put('/users/{user}', [AdminUserController::class, 'update'])->whereNumber('user');

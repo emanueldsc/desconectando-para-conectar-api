@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable(['banners', 'phrases', 'contact', 'socials', 'hero_button', 'home_reality'])]
+#[Fillable(['banners', 'phrases', 'contact', 'socials', 'hero_button', 'home_reality', 'monthly_goal'])]
 class CmsSetting extends Model
 {
     protected function casts(): array
@@ -17,6 +17,7 @@ class CmsSetting extends Model
             'socials' => 'array',
             'hero_button' => 'array',
             'home_reality' => 'array',
+            'monthly_goal' => 'decimal:2',
         ];
     }
 }
