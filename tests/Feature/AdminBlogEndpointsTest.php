@@ -129,6 +129,41 @@ class AdminBlogEndpointsTest extends TestCase
             ->assertJsonPath('code', 'POST_NOT_FOUND');
     }
 
+    public function test_internal_user_can_delete_post_using_post_fallback_endpoint(): void
+    {
+        $user = User::query()->create([
+            'name' => 'Gestor Conteudo',
+            'email' => 'gestor.postdelete@exemplo.com',
+            'password' => 'senha1234',
+            'role' => 'manager',
+            'status' => 'active',
+        ]);
+
+        $post = BlogPost::query()->create([
+            'title' => 'Publicação para excluir via POST',
+            'slug' => 'publicacao-excluir-via-post',
+            'content' => '<p>Conteúdo teste.</p>',
+            'excerpt' => 'Conteúdo teste.',
+            'featured_image' => 'https://cdn.exemplo.com/blog-delete.jpg',
+            'image_alt' => 'Imagem de teste',
+            'eyebrow' => 'Histórias',
+            'category' => 'Histórias',
+            'author_id' => $user->id,
+            'views' => 0,
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $response = $this->postJson("/api/admin/content/posts/{$post->id}/delete");
+
+        $response->assertOk()
+            ->assertJsonPath('success', true);
+
+        $this->assertDatabaseMissing('blog_posts', [
+            'id' => $post->id,
+        ]);
+    }
+
     public function test_published_admin_post_appears_in_public_blog_and_home(): void
     {
         $user = User::query()->create([

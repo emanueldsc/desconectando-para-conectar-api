@@ -54,6 +54,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/content/posts/featured-image', [AdminBlogController::class, 'uploadFeaturedImage']);
         Route::put('/content/posts/{post}', [AdminBlogController::class, 'update'])->whereNumber('post');
         Route::delete('/content/posts/{post}', [AdminBlogController::class, 'destroy'])->whereNumber('post');
+        Route::post('/content/posts/{post}/delete', [AdminBlogController::class, 'destroyByPost'])->whereNumber('post');
         Route::get('/raffles', [AdminRaffleController::class, 'index']);
         Route::post('/raffles', [AdminRaffleController::class, 'store']);
         Route::post('/raffles/image', [AdminRaffleController::class, 'uploadImage']);

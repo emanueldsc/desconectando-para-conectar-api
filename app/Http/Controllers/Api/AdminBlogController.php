@@ -152,6 +152,11 @@ class AdminBlogController extends Controller
         ]);
     }
 
+    public function destroyByPost(Request $request, int $post): JsonResponse
+    {
+        return $this->destroy($request, $post);
+    }
+
     public function uploadFeaturedImage(Request $request): JsonResponse
     {
         if (! $this->canManageContent($request)) {
