@@ -40,7 +40,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/profile', [\App\Http\Controllers\Api\MemberController::class, 'profile']);
         Route::get('/raffles', [\App\Http\Controllers\Api\MemberController::class, 'raffles']);
         Route::get('/donations', [\App\Http\Controllers\Api\MemberController::class, 'donations']);
-        Route::put('/profile', fn () => response()->json(['message' => 'Not implemented yet'], 501));
+        Route::put('/profile', [\App\Http\Controllers\Api\MemberController::class, 'updateProfile']);
     });
 
     Route::prefix('admin')->group(function (): void {

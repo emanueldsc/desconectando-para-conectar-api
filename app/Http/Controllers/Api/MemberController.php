@@ -33,6 +33,41 @@ class MemberController extends Controller
         ]);
     }
 
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+
+        if (! $user) {
+            return response()->json(['success' => false, 'message' => 'Não autenticado'], 401);
+        }
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:30'],
+            'address' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $user->update([
+            'name' => trim((string) $validated['name']),
+            'phone' => isset($validated['phone']) ? trim((string) $validated['phone']) : null,
+            'address' => isset($validated['address']) ? trim((string) $validated['address']) : null,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Perfil atualizado com sucesso.',
+            'data' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'avatar' => $user->avatar,
+                'address' => $user->address,
+                'role' => $user->role,
+            ],
+        ]);
+    }
+
     // GET /api/member/raffles
     public function raffles(Request $request)
     {
