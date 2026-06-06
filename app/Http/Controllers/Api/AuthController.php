@@ -116,7 +116,7 @@ class AuthController extends Controller
         ];
 
         if ($isInternal) {
-            $rules['role'] = ['required', 'string', 'in:'.implode(',', self::INTERNAL_ROLES)];
+            $rules['role'] = ['nullable', 'string', 'in:'.implode(',', self::INTERNAL_ROLES)];
         }
 
         try {
@@ -132,7 +132,7 @@ class AuthController extends Controller
 
         try {
             $role = $isInternal
-                ? $validated['role']
+                ? 'publisher'
                 : self::MEMBER_ROLE;
 
             $user = User::create([

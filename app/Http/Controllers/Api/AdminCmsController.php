@@ -130,7 +130,7 @@ class AdminCmsController extends Controller
     {
         $role = (string) ($request->user()?->role ?? '');
 
-        return in_array($role, ['manager', 'publisher'], true);
+        return $role === 'manager';
     }
 
     private function resolveSettings(): CmsSetting

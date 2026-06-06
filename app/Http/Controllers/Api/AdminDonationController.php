@@ -150,7 +150,7 @@ class AdminDonationController extends Controller
     {
         $role = (string) ($request->user()?->role ?? '');
 
-        return in_array($role, ['manager', 'publisher'], true);
+        return $role === 'manager';
     }
 
     private function formatDonation(Donation $donation): array

@@ -48,7 +48,7 @@ class AdminUserController extends Controller
             'phone' => ['nullable', 'string', 'max:30'],
             'address' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:1000'],
-            'role' => ['required', 'string', 'in:none,manager,publisher'],
+            'role' => ['required', 'string', 'in:none,publisher'],
             'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
         ]);
@@ -61,7 +61,7 @@ class AdminUserController extends Controller
         }
 
         $isInternalContact = $validated['role'] === 'none';
-        $storedRole = $isInternalContact ? 'buyer' : $validated['role'];
+        $storedRole = $isInternalContact ? 'buyer' : 'publisher';
         $email = $isInternalContact
             ? sprintf('contato-%s%s', strtolower((string) Str::ulid()), self::INTERNAL_CONTACT_DOMAIN)
             : (string) $validated['email'];
@@ -133,7 +133,7 @@ class AdminUserController extends Controller
     {
         $role = (string) ($request->user()?->role ?? '');
 
-        return in_array($role, ['manager', 'publisher'], true);
+        return $role === 'manager';
     }
 
     private function formatUser(User $user): array
