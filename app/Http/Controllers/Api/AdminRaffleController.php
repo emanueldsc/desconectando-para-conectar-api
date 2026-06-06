@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Institution;
 use App\Models\Raffle;
 use App\Models\RaffleReservation;
 use Carbon\Carbon;
@@ -56,10 +55,9 @@ class AdminRaffleController extends Controller
         }
 
         $payload = $this->validatedPayload($request);
-        $organizationId = $this->resolveOrganizationId();
         $ticketCount = ($payload['rangeEnd'] - $payload['rangeStart']) + 1;
 
-        $raffle = $this->createRaffleWithExtractionNumber($payload, $organizationId, $ticketCount);
+        $raffle = $this->createRaffleWithExtractionNumber($payload, $ticketCount);
 
         return response()->json([
             'success' => true,
@@ -368,7 +366,7 @@ class AdminRaffleController extends Controller
     /**
      * @param array{title: string, description: string, rangeStart: int, rangeEnd: int, ticketPrice: float, imageUrl?: string, reservationTimeoutMinutes: int, drawDate: ?Carbon} $payload
      */
-    private function createRaffleWithExtractionNumber(array $payload, int $organizationId, int $ticketCount): Raffle
+    private function createRaffleWithExtractionNumber(array $payload, int $ticketCount): Raffle
     {
         $maxAttempts = 5;
 
@@ -390,7 +388,6 @@ class AdminRaffleController extends Controller
                     'tickets_available' => $ticketCount,
                     'tickets_sold' => 0,
                     'reservation_timeout_minutes' => $payload['reservationTimeoutMinutes'],
-                    'organization_id' => $organizationId,
                     'featured' => false,
                     'meta_description' => Str::limit($payload['description'], 155, ''),
                 ]);
@@ -457,19 +454,6 @@ class AdminRaffleController extends Controller
                 ? Carbon::parse((string) $validated['drawDate'])
                 : null,
         ];
-    }
-
-    private function resolveOrganizationId(): int
-    {
-        $organization = Institution::query()->active()->first() ?? Institution::query()->first();
-
-        if (! $organization) {
-            throw ValidationException::withMessages([
-                'organization' => 'Cadastre ao menos uma instituição ativa antes de criar rifas.',
-            ]);
-        }
-
-        return (int) $organization->id;
     }
 
     private function uniqueSlug(string $title, ?int $ignoreId = null): string

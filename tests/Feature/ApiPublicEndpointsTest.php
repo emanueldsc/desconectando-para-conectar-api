@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\BlogPost;
 use App\Models\CmsSetting;
-use App\Models\Institution;
 use App\Models\Raffle;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -28,7 +27,7 @@ class ApiPublicEndpointsTest extends TestCase
             ->assertJsonPath('realitySection.title', 'Nossa Realidade')
             ->assertJsonCount(4, 'realitySection.publications')
             ->assertJsonCount(3, 'featuredRaffles')
-            ->assertJsonCount(4, 'institutions')
+            ->assertJsonPath('statistics.communitiesReached', 4)
             ->assertJsonCount(3, 'blogPreview');
     }
 
@@ -204,7 +203,6 @@ class ApiPublicEndpointsTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('slug', 'cesta-regional-nordestina')
-            ->assertJsonPath('organization.name', 'Instituto Raízes')
             ->assertJsonStructure([
                 'id',
                 'title',
@@ -224,7 +222,6 @@ class ApiPublicEndpointsTest extends TestCase
                 'numbers',
                 'slug',
                 'createdAt',
-                'organization' => ['id', 'name', 'logo', 'description', 'contact'],
                 'rules',
                 'seo' => ['metaDescription', 'keywords'],
                 'winnerInfo',
@@ -382,19 +379,6 @@ class ApiPublicEndpointsTest extends TestCase
             'email_verified_at' => now(),
         ]);
 
-        $institutions = collect([
-            ['name' => 'Associação Sertaneja', 'image_position' => 'left center'],
-            ['name' => 'Instituto Raízes', 'image_position' => 'center center'],
-            ['name' => 'Rede Caatinga', 'image_position' => 'right center'],
-            ['name' => 'Projeto Mandacaru', 'image_position' => 'center top'],
-        ])->map(fn (array $data) => Institution::query()->create([
-            'name' => $data['name'],
-            'description' => "Descrição de {$data['name']}",
-            'image' => "https://cdn.exemplo.com/{$data['name']}.jpg",
-            'image_position' => $data['image_position'],
-            'status' => 'active',
-        ]));
-
         BlogPost::query()->create([
             'title' => 'Como a solidariedade transformou o Sertão',
             'slug' => 'como-solidariedade-transformou',
@@ -478,7 +462,6 @@ class ApiPublicEndpointsTest extends TestCase
             'ticket_price' => 10,
             'tickets_available' => 5000,
             'tickets_sold' => 3200,
-            'organization_id' => $institutions[1]->id,
             'rules' => '<h4>Regras da Rifa</h4><p>1. Participação aberta ao público em geral...</p>',
             'numbers' => [
                 ['number' => 1, 'status' => 'available'],
@@ -508,7 +491,6 @@ class ApiPublicEndpointsTest extends TestCase
             'ticket_price' => 5,
             'tickets_available' => 3000,
             'tickets_sold' => 1800,
-            'organization_id' => $institutions[1]->id,
             'rules' => null,
             'numbers' => null,
             'winner_info' => null,
@@ -533,7 +515,6 @@ class ApiPublicEndpointsTest extends TestCase
             'ticket_price' => 20,
             'tickets_available' => 12000,
             'tickets_sold' => 12000,
-            'organization_id' => $institutions[0]->id,
             'rules' => null,
             'numbers' => [['number' => 1, 'status' => 'occupied']],
             'winner_info' => [

@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\Institution;
 use App\Models\Raffle;
 use Illuminate\Database\Seeder;
 
@@ -10,12 +9,6 @@ class RaffleSeeder extends Seeder
 {
     public function run(): void
     {
-        $organization = Institution::query()->where('name', 'Instituto Raízes')->first() ?? Institution::query()->first();
-
-        if (! $organization) {
-            return;
-        }
-
         $raffles = [
             [
                 'title' => 'Cesta Regional Nordestina',
@@ -108,7 +101,7 @@ class RaffleSeeder extends Seeder
         foreach ($raffles as $raffle) {
             Raffle::query()->updateOrCreate(
                 ['slug' => $raffle['slug']],
-                $raffle + ['organization_id' => $organization->id]
+                $raffle
             );
         }
     }

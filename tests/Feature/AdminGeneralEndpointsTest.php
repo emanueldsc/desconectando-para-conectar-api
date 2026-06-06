@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\Donation;
 use App\Models\CmsSetting;
-use App\Models\Institution;
 use App\Models\Raffle;
 use App\Models\RaffleReservation;
 use App\Models\User;
@@ -75,13 +74,6 @@ class AdminGeneralEndpointsTest extends TestCase
             'monthly_goal' => 500,
         ]);
 
-        $institution = Institution::query()->create([
-            'name' => 'Instituto Teste',
-            'description' => 'Apoio local',
-            'image' => 'https://cdn.exemplo.com/instituicao.png',
-            'status' => 'active',
-        ]);
-
         $activeRaffle = Raffle::query()->create([
             'title' => 'Rifa Solidaria A',
             'slug' => 'rifa-solidaria-a',
@@ -96,7 +88,6 @@ class AdminGeneralEndpointsTest extends TestCase
             'ticket_price' => 10,
             'tickets_available' => 100,
             'tickets_sold' => 45,
-            'organization_id' => $institution->id,
         ]);
 
         Raffle::query()->create([
@@ -113,7 +104,6 @@ class AdminGeneralEndpointsTest extends TestCase
             'ticket_price' => 10,
             'tickets_available' => 200,
             'tickets_sold' => 30,
-            'organization_id' => $institution->id,
         ]);
 
         Donation::query()->forceCreate([

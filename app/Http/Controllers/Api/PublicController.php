@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\BlogPost;
 use App\Models\CmsSetting;
-use App\Models\Institution;
 use App\Models\Raffle;
 use Illuminate\Http\JsonResponse;
 use OpenApi\Attributes as OA;
@@ -29,7 +28,6 @@ class PublicController extends Controller
                         new OA\Property(property: 'hero', type: 'object'),
                         new OA\Property(property: 'realitySection', type: 'object'),
                         new OA\Property(property: 'featuredRaffles', type: 'array', items: new OA\Items(type: 'object')),
-                        new OA\Property(property: 'institutions', type: 'array', items: new OA\Items(type: 'object')),
                         new OA\Property(property: 'statistics', type: 'object'),
                         new OA\Property(property: 'blogPreview', type: 'array', items: new OA\Items(type: 'object')),
                     ]
@@ -40,15 +38,15 @@ class PublicController extends Controller
     public function getHome(): JsonResponse
     {
         $cms = CmsSetting::query()->first();
+        $realitySection = $this->realitySection($cms);
 
         return response()->json([
             'hero' => $this->hero($cms),
             'impactPhrases' => $this->impactPhrases($cms),
-            'realitySection' => $this->realitySection($cms),
+            'realitySection' => $realitySection,
             'socials' => $this->socials($cms),
             'featuredRaffles' => $this->featuredRaffles(),
-            'institutions' => $this->institutions(),
-            'statistics' => $this->statistics(),
+            'statistics' => $this->statistics($realitySection['publications'] ?? []),
             'blogPreview' => $this->blogPreview(),
         ]);
     }
@@ -123,7 +121,6 @@ class PublicController extends Controller
     private function featuredRaffles(): array
     {
         return Raffle::query()
-            ->with('organization')
             ->where(function ($query): void {
                 $query->where('status', 'active')->orWhere('featured', true);
             })
@@ -134,29 +131,12 @@ class PublicController extends Controller
             ->all();
     }
 
-    private function institutions(): array
-    {
-        return Institution::query()
-            ->active()
-            ->latest()
-            ->limit(4)
-            ->get()
-            ->map(fn (Institution $institution): array => [
-                'id' => $institution->id,
-                'name' => $institution->name,
-                'description' => $institution->description,
-                'image' => $institution->image,
-                'imagePosition' => $institution->image_position,
-            ])
-            ->all();
-    }
-
-    private function statistics(): array
+    private function statistics(array $realityPublications): array
     {
         return [
             'totalDonated' => (float) Raffle::query()->sum('current'),
             'livesImpacted' => (int) Raffle::query()->sum('tickets_sold'),
-            'communitiesReached' => Institution::query()->active()->count(),
+            'communitiesReached' => count($realityPublications),
         ];
     }
 

@@ -208,7 +208,7 @@ class RaffleController extends Controller
         $sort = (string) $request->string('sort', 'newest');
         $includeOld = $request->boolean('includeOld', false);
 
-        $query = Raffle::query()->with('organization');
+        $query = Raffle::query();
 
         if (! $includeOld) {
             $query->whereIn('status', ['active', 'coming']);
@@ -273,7 +273,6 @@ class RaffleController extends Controller
                         new OA\Property(property: 'description', type: 'string'),
                         new OA\Property(property: 'status', type: 'string'),
                         new OA\Property(property: 'drawDate', type: 'string'),
-                        new OA\Property(property: 'organization', type: 'object'),
                     ]
                 )
             ),
@@ -281,10 +280,10 @@ class RaffleController extends Controller
     )]
     public function show(int $id): JsonResponse
     {
-        $raffle = Raffle::query()->with('organization')->findOrFail($id);
+        $raffle = Raffle::query()->findOrFail($id);
         $this->sanitizeNumbers($raffle, true);
 
-        return $this->respondWithRaffle($raffle->fresh('organization'));
+        return $this->respondWithRaffle($raffle->fresh());
     }
 
     #[OA\Get(
@@ -306,7 +305,6 @@ class RaffleController extends Controller
                         new OA\Property(property: 'description', type: 'string'),
                         new OA\Property(property: 'status', type: 'string'),
                         new OA\Property(property: 'drawDate', type: 'string'),
-                        new OA\Property(property: 'organization', type: 'object'),
                     ]
                 )
             ),
@@ -314,10 +312,10 @@ class RaffleController extends Controller
     )]
     public function showBySlug(string $slug): JsonResponse
     {
-        $raffle = Raffle::query()->with('organization')->where('slug', $slug)->firstOrFail();
+        $raffle = Raffle::query()->where('slug', $slug)->firstOrFail();
         $this->sanitizeNumbers($raffle, true);
 
-        return $this->respondWithRaffle($raffle->fresh('organization'));
+        return $this->respondWithRaffle($raffle->fresh());
     }
 
     private function respondWithRaffle(Raffle $raffle): JsonResponse
@@ -343,13 +341,6 @@ class RaffleController extends Controller
             'numbers' => $this->sanitizeNumbers($raffle, false),
             'slug' => $raffle->slug,
             'createdAt' => $raffle->created_at?->toISOString(),
-            'organization' => [
-                'id' => $raffle->organization->id,
-                'name' => $raffle->organization->name,
-                'logo' => $raffle->organization->logo,
-                'description' => $raffle->organization->description,
-                'contact' => $raffle->organization->contact,
-            ],
             'rules' => $raffle->rules,
             'seo' => [
                 'metaDescription' => $raffle->meta_description,

@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Institution;
 use App\Models\Raffle;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -17,13 +16,6 @@ class AdminRaffleEndpointsTest extends TestCase
 
     public function test_internal_user_can_create_update_and_delete_raffle(): void
     {
-        Institution::query()->create([
-            'name' => 'Instituto Nordeste Solidário',
-            'description' => 'Apoio comunitário',
-            'image' => 'https://cdn.exemplo.com/org-2.jpg',
-            'status' => 'active',
-        ]);
-
         $user = User::query()->create([
             'name' => 'Gestor CRUD Rifa',
             'email' => 'gestor.crud@exemplo.com',
@@ -80,13 +72,6 @@ class AdminRaffleEndpointsTest extends TestCase
 
     public function test_internal_user_can_list_and_draw_raffle_with_optional_winner_name(): void
     {
-        $organization = Institution::query()->create([
-            'name' => 'Instituto Sertão Vivo',
-            'description' => 'Apoio comunitário',
-            'image' => 'https://cdn.exemplo.com/org.jpg',
-            'status' => 'active',
-        ]);
-
         $raffle = Raffle::query()->create([
             'title' => 'Rifa Solidária',
             'slug' => 'rifa-solidaria',
@@ -101,7 +86,6 @@ class AdminRaffleEndpointsTest extends TestCase
             'ticket_price' => 10,
             'tickets_available' => 100,
             'tickets_sold' => 100,
-            'organization_id' => $organization->id,
             'winner_info' => null,
             'featured' => false,
         ]);
@@ -124,28 +108,24 @@ class AdminRaffleEndpointsTest extends TestCase
 
         $drawResponse = $this->postJson("/api/admin/raffles/{$raffle->id}/draw", [
             'winnerNumber' => 98,
-            'extractionNumber' => 15234,
             'winnerName' => 'Maria da Silva',
         ]);
+
+        $extractionNumber = (int) $drawResponse->json('data.extractionNumber');
 
         $drawResponse->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.status', 'closed')
-            ->assertJsonPath('data.extractionNumber', 15234)
             ->assertJsonPath('data.winnerNumber', 98)
                 ->assertJsonPath('data.winnerName', 'Maria da Silva');
+
+        $this->assertGreaterThanOrEqual(100000, $extractionNumber);
+        $this->assertLessThanOrEqual(999999, $extractionNumber);
     }
 
     public function test_internal_user_can_activate_raffle_and_upload_image(): void
     {
         Storage::fake('public');
-
-        $organization = Institution::query()->create([
-            'name' => 'Instituto Sertão Vivo',
-            'description' => 'Apoio comunitário',
-            'image' => 'https://cdn.exemplo.com/org.jpg',
-            'status' => 'active',
-        ]);
 
         $raffle = Raffle::query()->create([
             'title' => 'Rifa em Rascunho',
@@ -161,7 +141,6 @@ class AdminRaffleEndpointsTest extends TestCase
             'ticket_price' => 10,
             'tickets_available' => 100,
             'tickets_sold' => 0,
-            'organization_id' => $organization->id,
             'winner_info' => null,
             'featured' => false,
         ]);
@@ -196,13 +175,6 @@ class AdminRaffleEndpointsTest extends TestCase
 
     public function test_internal_user_can_confirm_reserved_number_and_update_timeout(): void
     {
-        $organization = Institution::query()->create([
-            'name' => 'Instituto Sertão Vivo',
-            'description' => 'Apoio comunitário',
-            'image' => 'https://cdn.exemplo.com/org.jpg',
-            'status' => 'active',
-        ]);
-
         $raffle = Raffle::query()->create([
             'title' => 'Rifa com Reserva',
             'slug' => 'rifa-com-reserva',
@@ -218,7 +190,6 @@ class AdminRaffleEndpointsTest extends TestCase
             'tickets_available' => 100,
             'tickets_sold' => 0,
             'reservation_timeout_minutes' => 30,
-            'organization_id' => $organization->id,
             'numbers' => [
                 [
                     'number' => 1,
