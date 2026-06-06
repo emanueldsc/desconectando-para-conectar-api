@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Throwable;
 
 class AdminBlogController extends Controller
 {
@@ -113,7 +114,7 @@ class AdminBlogController extends Controller
         ]);
     }
 
-    public function destroy(Request $request, BlogPost $post): JsonResponse
+    public function destroy(Request $request, int $post): JsonResponse
     {
         if (! $this->canManageContent($request)) {
             return response()->json([
@@ -123,7 +124,27 @@ class AdminBlogController extends Controller
             ], 403);
         }
 
-        $post->delete();
+        $postModel = BlogPost::query()->find($post);
+
+        if (! $postModel) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Publicação não encontrada.',
+                'code' => 'POST_NOT_FOUND',
+            ], 404);
+        }
+
+        try {
+            $postModel->delete();
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Não foi possível excluir a publicação agora.',
+                'code' => 'DELETE_FAILED',
+            ], 500);
+        }
 
         return response()->json([
             'success' => true,

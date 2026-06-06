@@ -89,7 +89,7 @@ class AdminBlogEndpointsTest extends TestCase
         $path = str_replace('/storage/', '', parse_url($url, PHP_URL_PATH) ?? '');
 
         $this->assertNotSame('', $path);
-        Storage::disk('public')->assertExists($path);
+        $this->assertTrue(Storage::disk('public')->exists($path));
     }
 
     public function test_member_user_cannot_access_blog_management(): void
@@ -108,6 +108,25 @@ class AdminBlogEndpointsTest extends TestCase
 
         $response->assertStatus(403)
             ->assertJsonPath('code', 'FORBIDDEN');
+    }
+
+    public function test_delete_non_existing_post_returns_json_not_found(): void
+    {
+        $user = User::query()->create([
+            'name' => 'Gestor Conteudo',
+            'email' => 'gestor.notfound@exemplo.com',
+            'password' => 'senha1234',
+            'role' => 'manager',
+            'status' => 'active',
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $response = $this->deleteJson('/api/admin/content/posts/999999');
+
+        $response->assertStatus(404)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('code', 'POST_NOT_FOUND');
     }
 
     public function test_published_admin_post_appears_in_public_blog_and_home(): void
