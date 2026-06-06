@@ -9,6 +9,7 @@ use App\Models\RaffleReservation;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
@@ -58,25 +59,7 @@ class AdminRaffleController extends Controller
         $organizationId = $this->resolveOrganizationId();
         $ticketCount = ($payload['rangeEnd'] - $payload['rangeStart']) + 1;
 
-        $raffle = Raffle::query()->create([
-            'title' => $payload['title'],
-            'slug' => $this->uniqueSlug($payload['title']),
-            'description' => $payload['description'],
-            'full_description' => $payload['description'],
-            'image' => $payload['imageUrl'] ?? self::DEFAULT_IMAGE,
-            'goal' => $ticketCount * $payload['ticketPrice'],
-            'current' => 0,
-            'status' => 'coming',
-            'draw_date' => $payload['drawDate'],
-            'category' => 'Geral',
-            'ticket_price' => $payload['ticketPrice'],
-            'tickets_available' => $ticketCount,
-            'tickets_sold' => 0,
-            'reservation_timeout_minutes' => $payload['reservationTimeoutMinutes'],
-            'organization_id' => $organizationId,
-            'featured' => false,
-            'meta_description' => Str::limit($payload['description'], 155, ''),
-        ]);
+        $raffle = $this->createRaffleWithExtractionNumber($payload, $organizationId, $ticketCount);
 
         return response()->json([
             'success' => true,
@@ -330,12 +313,13 @@ class AdminRaffleController extends Controller
                 'min:1',
                 'max:'.$raffle->tickets_available,
             ],
-            'extractionNumber' => ['required', 'integer', 'min:1', 'unique:raffles,extraction_number'],
             'winnerName' => ['nullable', 'string', 'max:120'],
         ]);
 
         $winnerNumber = (int) $validated['winnerNumber'];
-        $extractionNumber = (int) $validated['extractionNumber'];
+        $extractionNumber = isset($raffle->extraction_number)
+            ? (int) $raffle->extraction_number
+            : $this->generateExtractionNumber();
         $winnerName = is_string($validated['winnerName'] ?? null)
             ? trim((string) $validated['winnerName'])
             : null;
@@ -379,6 +363,61 @@ class AdminRaffleController extends Controller
             'message' => 'Sorteio registrado com sucesso',
             'data' => $this->formatRaffle($raffle->fresh()),
         ]);
+    }
+
+    /**
+     * @param array{title: string, description: string, rangeStart: int, rangeEnd: int, ticketPrice: float, imageUrl?: string, reservationTimeoutMinutes: int, drawDate: ?Carbon} $payload
+     */
+    private function createRaffleWithExtractionNumber(array $payload, int $organizationId, int $ticketCount): Raffle
+    {
+        $maxAttempts = 5;
+
+        for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
+            try {
+                return Raffle::query()->create([
+                    'title' => $payload['title'],
+                    'slug' => $this->uniqueSlug($payload['title']),
+                    'description' => $payload['description'],
+                    'full_description' => $payload['description'],
+                    'image' => $payload['imageUrl'] ?? self::DEFAULT_IMAGE,
+                    'goal' => $ticketCount * $payload['ticketPrice'],
+                    'current' => 0,
+                    'status' => 'coming',
+                    'draw_date' => $payload['drawDate'],
+                    'extraction_number' => $this->generateExtractionNumber(),
+                    'category' => 'Geral',
+                    'ticket_price' => $payload['ticketPrice'],
+                    'tickets_available' => $ticketCount,
+                    'tickets_sold' => 0,
+                    'reservation_timeout_minutes' => $payload['reservationTimeoutMinutes'],
+                    'organization_id' => $organizationId,
+                    'featured' => false,
+                    'meta_description' => Str::limit($payload['description'], 155, ''),
+                ]);
+            } catch (QueryException $exception) {
+                if ($attempt === ($maxAttempts - 1) || ! $this->isUniqueConstraintViolation($exception)) {
+                    throw $exception;
+                }
+            }
+        }
+
+        throw ValidationException::withMessages([
+            'extractionNumber' => 'Não foi possível gerar um número de extração único. Tente novamente.',
+        ]);
+    }
+
+    private function generateExtractionNumber(): int
+    {
+        do {
+            $candidate = random_int(100000, 999999);
+        } while (Raffle::query()->where('extraction_number', $candidate)->exists());
+
+        return $candidate;
+    }
+
+    private function isUniqueConstraintViolation(QueryException $exception): bool
+    {
+        return (string) $exception->getCode() === '23000';
     }
 
     private function canManageRaffles(Request $request): bool
