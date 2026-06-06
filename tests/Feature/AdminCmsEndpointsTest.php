@@ -153,7 +153,7 @@ class AdminCmsEndpointsTest extends TestCase
         $path = str_replace('/storage/', '', parse_url((string) $url, PHP_URL_PATH) ?? '');
 
         $this->assertNotSame('', $path);
-        Storage::disk('public')->assertExists($path);
+        $this->assertTrue(Storage::disk('public')->exists($path));
     }
 
     public function test_upload_replaces_previous_local_banner_image(): void
@@ -161,7 +161,7 @@ class AdminCmsEndpointsTest extends TestCase
         Storage::fake('public');
 
         $oldPath = $this->fakePngUpload('banner-antigo.png')->store('cms-banners', 'public');
-        Storage::disk('public')->assertExists($oldPath);
+        $this->assertTrue(Storage::disk('public')->exists($oldPath));
 
         $user = User::query()->create([
             'name' => 'Publicador Upload',
@@ -182,7 +182,7 @@ class AdminCmsEndpointsTest extends TestCase
 
         $response->assertOk()->assertJsonPath('success', true);
 
-        Storage::disk('public')->assertMissing($oldPath);
+        $this->assertFalse(Storage::disk('public')->exists($oldPath));
     }
 
     public function test_update_can_remove_banner_image_and_delete_previous_local_file(): void
@@ -278,7 +278,7 @@ class AdminCmsEndpointsTest extends TestCase
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.banners.0.url', '');
 
-        Storage::disk('public')->assertMissing($oldPath);
+        $this->assertFalse(Storage::disk('public')->exists($oldPath));
     }
 
     private function fakePngUpload(string $name): UploadedFile
