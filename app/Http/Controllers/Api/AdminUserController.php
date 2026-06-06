@@ -47,6 +47,7 @@ class AdminUserController extends Controller
             'fullName' => ['required', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
             'address' => ['nullable', 'string', 'max:255'],
+            'notes' => ['nullable', 'string', 'max:1000'],
             'role' => ['required', 'string', 'in:none,manager,publisher'],
             'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
@@ -74,6 +75,7 @@ class AdminUserController extends Controller
             'password' => Hash::make($password),
             'phone' => $validated['phone'] ?? null,
             'address' => $validated['address'] ?? null,
+            'notes' => $validated['notes'] ?? null,
             'role' => $storedRole,
             'status' => $isInternalContact ? 'inactive' : 'active',
         ]);
@@ -98,6 +100,7 @@ class AdminUserController extends Controller
             'fullName' => ['required', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
             'address' => ['nullable', 'string', 'max:255'],
+            'notes' => ['nullable', 'string', 'max:1000'],
             'role' => ['required', 'string', 'in:none,buyer,manager,publisher'],
         ]);
 
@@ -113,6 +116,7 @@ class AdminUserController extends Controller
             'name' => $validated['fullName'],
             'phone' => $validated['phone'] ?? null,
             'address' => $validated['address'] ?? null,
+            'notes' => $validated['notes'] ?? null,
             'role' => $storedRole,
             'status' => $isInternalContact ? 'inactive' : 'active',
             'email' => $email,
@@ -145,6 +149,7 @@ class AdminUserController extends Controller
             'email' => (string) $user->email,
             'phone' => $user->phone,
             'address' => $user->address,
+            'notes' => $user->notes,
             'role' => $isInternalContact ? 'none' : (string) ($user->role ?? 'buyer'),
             'status' => (string) ($user->status ?? 'active'),
             'createdAt' => $user->created_at?->toISOString(),
