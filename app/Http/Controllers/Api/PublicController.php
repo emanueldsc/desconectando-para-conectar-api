@@ -45,6 +45,7 @@ class PublicController extends Controller
             'hero' => $this->hero($cms),
             'impactPhrases' => $this->impactPhrases($cms),
             'realitySection' => $this->realitySection($cms),
+            'socials' => $this->socials($cms),
             'featuredRaffles' => $this->featuredRaffles(),
             'institutions' => $this->institutions(),
             'statistics' => $this->statistics(),
@@ -105,6 +106,17 @@ class PublicController extends Controller
             'publications' => $displayMode === 'selected' && $publicationIds !== []
                 ? $this->selectedPublications($publicationIds)
                 : $this->latestPublications(4),
+        ];
+    }
+
+    private function socials(?CmsSetting $cms): array
+    {
+        $socials = is_array($cms?->socials) ? $cms->socials : [];
+
+        return [
+            'instagram' => (string) ($socials['instagram'] ?? ''),
+            'facebook' => (string) ($socials['facebook'] ?? ''),
+            'youtube' => (string) ($socials['youtube'] ?? ''),
         ];
     }
 

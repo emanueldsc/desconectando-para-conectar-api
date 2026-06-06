@@ -45,6 +45,7 @@ class AdminDonationController extends Controller
         ]);
 
         $donation = Donation::create([
+            'user_id'        => $request->user()?->id,
             'donor_name'     => $validated['donorName'],
             'amount'         => $validated['amount'],
             'date'           => $validated['date'],

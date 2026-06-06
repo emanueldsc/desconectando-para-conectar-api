@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['donor_name', 'amount', 'date', 'payment_method', 'status', 'notes', 'created_by'])]
+#[Fillable(['user_id', 'donor_name', 'amount', 'date', 'payment_method', 'status', 'notes', 'created_by'])]
 class Donation extends Model
 {
     protected function casts(): array
