@@ -9,6 +9,7 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use OpenApi\Attributes as OA;
@@ -101,67 +102,78 @@ class RaffleController extends Controller
             'receipt' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:15360'],
         ]);
 
-        $numbers = $this->sanitizeNumbers($raffle, true);
-        $index = collect($numbers)->search(fn (array $item): bool => (int) ($item['number'] ?? 0) === $number);
+        return DB::transaction(function () use ($request, $raffle, $number, $validated): JsonResponse {
+            $lockedRaffle = Raffle::query()
+                ->whereKey($raffle->id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        if ($index === false) {
+            $numbers = $this->sanitizeNumbers($lockedRaffle, true);
+            $index = collect($numbers)->search(fn (array $item): bool => (int) ($item['number'] ?? 0) === $number);
+
+            if ($index === false) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Número não encontrado para esta rifa.',
+                ], 422);
+            }
+
+            $current = $numbers[$index];
+
+            if (($current['status'] ?? '') !== 'reserved') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Este ponto não está reservado no momento.',
+                ], 422);
+            }
+
+            if ((string) ($current['reservationCode'] ?? '') !== (string) $validated['reservationCode']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Código de reserva inválido para este ponto.',
+                ], 422);
+            }
+
+            $reservedUntil = $this->safeDate($current['reservedUntil'] ?? null);
+
+            if (! $reservedUntil || $reservedUntil->isPast()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'O tempo de reserva deste ponto expirou.',
+                ], 422);
+            }
+
+            $previousReceiptUrl = is_string($current['reservationReceiptUrl'] ?? null)
+                ? $current['reservationReceiptUrl']
+                : null;
+
+            $path = $request->file('receipt')->store('raffle-receipts', 'public');
+            $url = rtrim($request->getSchemeAndHttpHost(), '/').Storage::url($path);
+
+            $numbers[$index] = [
+                ...$current,
+                'reservationReceiptUrl' => $url,
+                'reservationPaymentStatus' => 'pending_review',
+                'receiptSentAt' => now()->toISOString(),
+            ];
+
+            $lockedRaffle->numbers = array_values($numbers);
+            $lockedRaffle->save();
+
+            if ($previousReceiptUrl !== null && $previousReceiptUrl !== $url) {
+                $this->deleteReceiptFile($previousReceiptUrl);
+            }
+
             return response()->json([
-                'success' => false,
-                'message' => 'Número não encontrado para esta rifa.',
-            ], 422);
-        }
-
-        $current = $numbers[$index];
-
-        if (($current['status'] ?? '') !== 'reserved') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Este ponto não está reservado no momento.',
-            ], 422);
-        }
-
-        if ((string) ($current['reservationCode'] ?? '') !== (string) $validated['reservationCode']) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Código de reserva inválido para este ponto.',
-            ], 422);
-        }
-
-        $reservedUntil = $this->safeDate($current['reservedUntil'] ?? null);
-
-        if (! $reservedUntil || $reservedUntil->isPast()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'O tempo de reserva deste ponto expirou.',
-            ], 422);
-        }
-
-        if (is_string($current['reservationReceiptUrl'] ?? null)) {
-            $this->deleteReceiptFile($current['reservationReceiptUrl']);
-        }
-
-        $path = $request->file('receipt')->store('raffle-receipts', 'public');
-        $url = rtrim($request->getSchemeAndHttpHost(), '/').Storage::url($path);
-
-        $numbers[$index] = [
-            ...$current,
-            'reservationReceiptUrl' => $url,
-            'reservationPaymentStatus' => 'pending_review',
-            'receiptSentAt' => now()->toISOString(),
-        ];
-
-        $raffle->numbers = array_values($numbers);
-        $raffle->save();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Comprovante enviado. Aguarde a confirmação do administrador.',
-            'data' => [
-                'number' => $number,
-                'receiptUrl' => $url,
-                'paymentStatus' => 'pending_review',
-            ],
-        ]);
+                'success' => true,
+                'message' => 'Comprovante enviado. Aguarde a confirmação do administrador.',
+                'data' => [
+                    'number' => $number,
+                    'receiptUrl' => $url,
+                    'paymentStatus' => 'pending_review',
+                ],
+            ]);
+        });
     }
 
     #[OA\Get(

@@ -261,6 +261,113 @@ class ApiPublicEndpointsTest extends TestCase
         $this->assertTrue(Storage::disk('public')->exists('raffle-receipts/'.$file->hashName()));
     }
 
+    public function test_public_user_can_upload_receipts_for_two_reserved_numbers(): void
+    {
+        Storage::fake('public');
+        $this->seedPublicData();
+
+        $reserveOne = $this->postJson('/api/public/raffles/1/numbers/1/reserve', [
+            'buyerName' => 'Cliente Teste',
+            'buyerPhone' => '(81) 90000-0000',
+        ]);
+
+        $reserveThree = $this->postJson('/api/public/raffles/1/numbers/3/reserve', [
+            'buyerName' => 'Cliente Teste',
+            'buyerPhone' => '(81) 90000-0000',
+        ]);
+
+        $reserveOne->assertOk()->assertJsonPath('success', true);
+        $reserveThree->assertOk()->assertJsonPath('success', true);
+
+        $codeOne = (string) $reserveOne->json('data.reservationCode');
+        $codeThree = (string) $reserveThree->json('data.reservationCode');
+
+        $fileOne = UploadedFile::fake()->create('comprovante-1.jpg', 256, 'image/jpeg');
+        $fileThree = UploadedFile::fake()->create('comprovante-3.png', 256, 'image/png');
+
+        $uploadOne = $this->postJson('/api/public/raffles/1/numbers/1/receipt', [
+            'reservationCode' => $codeOne,
+            'receipt' => $fileOne,
+        ]);
+
+        $uploadThree = $this->postJson('/api/public/raffles/1/numbers/3/receipt', [
+            'reservationCode' => $codeThree,
+            'receipt' => $fileThree,
+        ]);
+
+        $uploadOne->assertOk()->assertJsonPath('data.paymentStatus', 'pending_review');
+        $uploadThree->assertOk()->assertJsonPath('data.paymentStatus', 'pending_review');
+
+        $raffle = Raffle::query()->findOrFail(1);
+        $numbers = collect($raffle->numbers ?? []);
+
+        $numberOne = $numbers->firstWhere('number', 1);
+        $numberThree = $numbers->firstWhere('number', 3);
+
+        $this->assertIsArray($numberOne);
+        $this->assertIsArray($numberThree);
+        $this->assertSame('pending_review', $numberOne['reservationPaymentStatus'] ?? null);
+        $this->assertSame('pending_review', $numberThree['reservationPaymentStatus'] ?? null);
+        $this->assertNotEmpty($numberOne['reservationReceiptUrl'] ?? null);
+        $this->assertNotEmpty($numberThree['reservationReceiptUrl'] ?? null);
+        $this->assertTrue(Storage::disk('public')->exists('raffle-receipts/'.$fileOne->hashName()));
+        $this->assertTrue(Storage::disk('public')->exists('raffle-receipts/'.$fileThree->hashName()));
+    }
+
+    public function test_invalid_code_on_second_receipt_does_not_break_first_uploaded_receipt(): void
+    {
+        Storage::fake('public');
+        $this->seedPublicData();
+
+        $reserveOne = $this->postJson('/api/public/raffles/1/numbers/1/reserve', [
+            'buyerName' => 'Cliente Teste',
+            'buyerPhone' => '(81) 90000-0000',
+        ]);
+
+        $reserveThree = $this->postJson('/api/public/raffles/1/numbers/3/reserve', [
+            'buyerName' => 'Cliente Teste',
+            'buyerPhone' => '(81) 90000-0000',
+        ]);
+
+        $reserveOne->assertOk()->assertJsonPath('success', true);
+        $reserveThree->assertOk()->assertJsonPath('success', true);
+
+        $codeOne = (string) $reserveOne->json('data.reservationCode');
+        $wrongCodeForThree = (string) $reserveOne->json('data.reservationCode');
+
+        $fileOne = UploadedFile::fake()->create('comprovante-ok.jpg', 256, 'image/jpeg');
+        $fileThree = UploadedFile::fake()->create('comprovante-fail.jpg', 256, 'image/jpeg');
+
+        $uploadOne = $this->postJson('/api/public/raffles/1/numbers/1/receipt', [
+            'reservationCode' => $codeOne,
+            'receipt' => $fileOne,
+        ]);
+
+        $uploadThree = $this->postJson('/api/public/raffles/1/numbers/3/receipt', [
+            'reservationCode' => $wrongCodeForThree,
+            'receipt' => $fileThree,
+        ]);
+
+        $uploadOne->assertOk()->assertJsonPath('data.paymentStatus', 'pending_review');
+        $uploadThree->assertStatus(422)
+            ->assertJsonPath('success', false)
+            ->assertJsonPath('message', 'Código de reserva inválido para este ponto.');
+
+        $raffle = Raffle::query()->findOrFail(1);
+        $numbers = collect($raffle->numbers ?? []);
+
+        $numberOne = $numbers->firstWhere('number', 1);
+        $numberThree = $numbers->firstWhere('number', 3);
+
+        $this->assertIsArray($numberOne);
+        $this->assertIsArray($numberThree);
+        $this->assertSame('pending_review', $numberOne['reservationPaymentStatus'] ?? null);
+        $this->assertNotEmpty($numberOne['reservationReceiptUrl'] ?? null);
+        $this->assertSame('awaiting_receipt', $numberThree['reservationPaymentStatus'] ?? null);
+        $this->assertNull($numberThree['reservationReceiptUrl'] ?? null);
+        $this->assertTrue(Storage::disk('public')->exists('raffle-receipts/'.$fileOne->hashName()));
+    }
+
     private function seedPublicData(): void
     {
         $user = User::query()->create([
