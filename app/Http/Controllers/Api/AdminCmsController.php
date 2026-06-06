@@ -56,6 +56,7 @@ class AdminCmsController extends Controller
             'socials.facebook' => ['nullable', 'url', 'max:2048'],
             'socials.youtube' => ['nullable', 'url', 'max:2048'],
             'heroButton' => ['required', 'array'],
+            'heroButton.title' => ['required', 'string', 'max:120'],
             'heroButton.label' => ['required', 'string', 'max:80'],
             'heroButton.link' => ['required', 'string', 'max:255'],
             'heroButton.icon' => ['required', 'string', 'max:40'],
@@ -158,6 +159,7 @@ class AdminCmsController extends Controller
                     'youtube' => '',
                 ],
                 'hero_button' => [
+                    'title' => 'Desconectando para Conectar',
                     'label' => 'Participar Agora',
                     'link' => '/public/raffles',
                     'icon' => 'favorite_border',
@@ -209,6 +211,7 @@ class AdminCmsController extends Controller
                 'youtube' => '',
             ],
             'heroButton' => $settings->hero_button ?? [
+                'title' => 'Desconectando para Conectar',
                 'label' => 'Participar Agora',
                 'link' => '/public/raffles',
                 'icon' => 'favorite_border',

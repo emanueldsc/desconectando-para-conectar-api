@@ -37,7 +37,7 @@ class AdminCmsEndpointsTest extends TestCase
                     'phrases',
                     'contact' => ['email', 'whatsapp', 'phone'],
                     'socials' => ['instagram', 'facebook', 'youtube'],
-                    'heroButton' => ['label', 'link', 'icon', 'backgroundColor', 'textColor'],
+                    'heroButton' => ['title', 'label', 'link', 'icon', 'backgroundColor', 'textColor'],
                     'realitySection' => ['title', 'subtitle', 'displayMode', 'publicationIds'],
                     'monthlyGoal',
                     'updatedAt',
@@ -80,6 +80,7 @@ class AdminCmsEndpointsTest extends TestCase
                 'youtube' => 'https://youtube.com/@novocanal',
             ],
             'heroButton' => [
+                'title' => 'Desconectando para Conectar',
                 'label' => 'Doar Agora',
                 'link' => '/public/raffles',
                 'icon' => 'favorite',
@@ -211,6 +212,7 @@ class AdminCmsEndpointsTest extends TestCase
                 'youtube' => '',
             ],
             'hero_button' => [
+                'title' => 'Desconectando para Conectar',
                 'label' => 'Doar Agora',
                 'link' => '/public/raffles',
                 'icon' => 'favorite',
@@ -256,6 +258,7 @@ class AdminCmsEndpointsTest extends TestCase
                 'youtube' => '',
             ],
                 'heroButton' => [
+                    'title' => 'Desconectando para Conectar',
                     'label' => 'Doar Agora',
                     'link' => '/public/raffles',
                     'icon' => 'favorite',

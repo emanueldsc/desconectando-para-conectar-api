@@ -68,7 +68,7 @@ class PublicController extends Controller
             ->first(fn (string $phrase): bool => $phrase !== '');
 
         return [
-            'title' => 'Desconectando para Conectar',
+            'title' => (string) ($heroButton['title'] ?? 'Desconectando para Conectar'),
             'subtitle' => $firstPhrase !== null ? $firstPhrase : self::DEFAULT_HERO_SUBTITLE,
             'backgroundImage' => $firstBannerUrl !== null ? $firstBannerUrl : self::DEFAULT_HERO_BACKGROUND,
             'ctaLabel' => (string) ($heroButton['label'] ?? 'Participar Agora'),
