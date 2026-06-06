@@ -166,7 +166,7 @@ class AdminGeneralController extends Controller
 
             $history[] = [
                 'month' => $monthStart->format('Y-m'),
-                'label' => $monthStart->translatedFormat('M/Y'),
+                'label' => $this->monthLabelPtBr($monthStart),
                 'donations' => $donations,
                 'raffles' => $raffles,
                 'total' => $total,
@@ -175,5 +175,28 @@ class AdminGeneralController extends Controller
         }
 
         return $history;
+    }
+
+    private function monthLabelPtBr(CarbonImmutable $date): string
+    {
+        $months = [
+            1 => 'jan',
+            2 => 'fev',
+            3 => 'mar',
+            4 => 'abr',
+            5 => 'mai',
+            6 => 'jun',
+            7 => 'jul',
+            8 => 'ago',
+            9 => 'set',
+            10 => 'out',
+            11 => 'nov',
+            12 => 'dez',
+        ];
+
+        $month = (int) $date->format('n');
+        $year = $date->format('Y');
+
+        return sprintf('%s/%s', $months[$month] ?? 'mes', $year);
     }
 }
