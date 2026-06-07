@@ -177,7 +177,7 @@ class AdminBlogController extends Controller
         }
 
         $path = $request->file('image')->store('blog-images', 'public');
-        $url = rtrim($request->getSchemeAndHttpHost(), '/').Storage::url($path);
+        $url = rtrim(config('app.url'), '/').Storage::url($path);
 
         return response()->json([
             'success' => true,

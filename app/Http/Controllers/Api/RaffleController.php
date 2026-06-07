@@ -148,7 +148,7 @@ class RaffleController extends Controller
                 : null;
 
             $path = $request->file('receipt')->store('raffle-receipts', 'public');
-            $url = rtrim($request->getSchemeAndHttpHost(), '/').Storage::url($path);
+            $url = rtrim(config('app.url'), '/').Storage::url($path);
 
             $numbers[$index] = [
                 ...$current,

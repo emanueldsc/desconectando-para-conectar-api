@@ -49,6 +49,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/users', [AdminUserController::class, 'index']);
         Route::post('/users', [AdminUserController::class, 'store']);
         Route::put('/users/{user}', [AdminUserController::class, 'update'])->whereNumber('user');
+        Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])->whereNumber('user');
         Route::get('/content/posts', [AdminBlogController::class, 'index']);
         Route::post('/content/posts', [AdminBlogController::class, 'store']);
         Route::post('/content/posts/featured-image', [AdminBlogController::class, 'uploadFeaturedImage']);

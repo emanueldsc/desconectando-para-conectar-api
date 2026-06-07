@@ -96,6 +96,14 @@ class AdminUserController extends Controller
             ], 403);
         }
 
+        if ((bool) $user->is_default) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Não é permitido editar o usuário administrador padrão',
+                'code' => 'PROTECTED_DEFAULT_USER',
+            ], 403);
+        }
+
         $validated = $request->validate([
             'fullName' => ['required', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
@@ -129,6 +137,31 @@ class AdminUserController extends Controller
         ]);
     }
 
+    public function destroy(Request $request, User $user): JsonResponse
+    {
+        if (! $this->canManageUsers($request)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Acesso negado',
+            ], 403);
+        }
+
+        if ((bool) $user->is_default) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Não é permitido excluir o usuário administrador padrão',
+                'code' => 'PROTECTED_DEFAULT_USER',
+            ], 403);
+        }
+
+        $user->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Usuário excluído com sucesso',
+        ]);
+    }
+
     private function canManageUsers(Request $request): bool
     {
         $role = (string) ($request->user()?->role ?? '');
@@ -152,6 +185,7 @@ class AdminUserController extends Controller
             'notes' => $user->notes,
             'role' => $isInternalContact ? 'none' : (string) ($user->role ?? 'buyer'),
             'status' => (string) ($user->status ?? 'active'),
+            'isDefault' => (bool) $user->is_default,
             'createdAt' => $user->created_at?->toISOString(),
         ];
     }

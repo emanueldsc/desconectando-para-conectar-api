@@ -117,7 +117,7 @@ class AdminCmsController extends Controller
         }
 
         $path = $request->file('banner')->store('cms-banners', 'public');
-        $url = rtrim($request->getSchemeAndHttpHost(), '/').Storage::url($path);
+        $url = rtrim(config('app.url'), '/').Storage::url($path);
 
         return response()->json([
             'success' => true,
