@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\BlogPost;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -153,6 +154,23 @@ class AdminUserController extends Controller
                 'code' => 'PROTECTED_DEFAULT_USER',
             ], 403);
         }
+
+        $defaultAdmin = User::query()
+            ->where('is_default', true)
+            ->where('status', 'active')
+            ->first();
+
+        if (! $defaultAdmin) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Não foi possível excluir: administrador padrão não encontrado.',
+                'code' => 'DEFAULT_ADMIN_NOT_FOUND',
+            ], 422);
+        }
+
+        BlogPost::query()
+            ->where('author_id', $user->id)
+            ->update(['author_id' => $defaultAdmin->id]);
 
         $user->delete();
 
