@@ -44,7 +44,8 @@ class PublicController extends Controller
             'hero' => $this->hero($cms),
             'impactPhrases' => $this->impactPhrases($cms),
             'realitySection' => $realitySection,
-            'socials' => $this->socials($cms),
+                'contact' => $this->contact($cms),
+                'socials' => $this->socials($cms),
             'featuredRaffles' => $this->featuredRaffles(),
             'statistics' => $this->statistics($realitySection['publications'] ?? []),
             'blogPreview' => $this->blogPreview(),
@@ -117,6 +118,17 @@ class PublicController extends Controller
             'youtube' => (string) ($socials['youtube'] ?? ''),
         ];
     }
+
+        private function contact(?CmsSetting $cms): array
+        {
+            $contact = is_array($cms?->contact) ? $cms->contact : [];
+
+            return [
+                'email' => (string) ($contact['email'] ?? ''),
+                'whatsapp' => (string) ($contact['whatsapp'] ?? ''),
+                'phone' => (string) ($contact['phone'] ?? ''),
+            ];
+        }
 
     private function featuredRaffles(): array
     {
