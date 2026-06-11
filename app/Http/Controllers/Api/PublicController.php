@@ -132,13 +132,21 @@ class PublicController extends Controller
 
     private function featuredRaffles(): array
     {
-        return Raffle::query()
-            ->where(function ($query): void {
-                $query->where('status', 'active')->orWhere('featured', true);
-            })
+        $activeRaffles = Raffle::query()
+            ->where('status', 'active')
             ->latest('draw_date')
             ->limit(3)
-            ->get()
+            ->get();
+
+        $raffles = $activeRaffles->isNotEmpty()
+            ? $activeRaffles
+            : Raffle::query()
+                ->where('status', 'finished')
+                ->latest('draw_date')
+                ->limit(3)
+                ->get();
+
+        return $raffles
             ->map(fn (Raffle $raffle): array => $this->formatFeaturedRaffle($raffle))
             ->all();
     }
