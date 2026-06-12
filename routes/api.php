@@ -62,6 +62,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::put('/raffles/{raffle}', [AdminRaffleController::class, 'update'])->whereNumber('raffle');
         Route::post('/raffles/{raffle}/activate', [AdminRaffleController::class, 'activate'])->whereNumber('raffle');
         Route::post('/raffles/{raffle}/numbers/{number}/confirm-payment', [AdminRaffleController::class, 'confirmReservedNumber'])->whereNumber('raffle')->whereNumber('number');
+        Route::post('/raffles/{raffle}/numbers/{number}/mark-sold', [AdminRaffleController::class, 'markNumberAsSold'])->whereNumber('raffle')->whereNumber('number');
         Route::put('/raffles/{raffle}/reservation-timeout', [AdminRaffleController::class, 'updateReservationTimeout'])->whereNumber('raffle');
         Route::delete('/raffles/{raffle}', [AdminRaffleController::class, 'destroy'])->whereNumber('raffle');
         Route::post('/raffles/{raffle}/draw', [AdminRaffleController::class, 'draw'])->whereNumber('raffle');

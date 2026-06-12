@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Raffle;
 use App\Models\RaffleReservation;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -211,6 +212,120 @@ class AdminRaffleController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Ponto confirmado como comprado com sucesso.',
+            'data' => $this->formatRaffle($raffle->fresh()),
+        ]);
+    }
+
+    public function markNumberAsSold(Request $request, Raffle $raffle, int $number): JsonResponse
+    {
+        if (! $this->canManageRaffles($request)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Usuário sem permissão para gerenciar rifas',
+                'code' => 'FORBIDDEN',
+            ], 403);
+        }
+
+        if ($number < 1 || $number > (int) $raffle->tickets_available) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Número de ponto inválido para esta rifa.',
+            ], 422);
+        }
+
+        $validated = $request->validate([
+            'buyerUserId' => ['nullable', 'integer', 'exists:users,id'],
+            'buyerName' => ['nullable', 'string', 'max:120', 'required_without:buyerUserId'],
+            'buyerPhone' => ['nullable', 'string', 'max:40'],
+        ]);
+
+        $buyerUser = null;
+        $buyerUserId = isset($validated['buyerUserId']) ? (int) $validated['buyerUserId'] : null;
+
+        if ($buyerUserId !== null) {
+            $buyerUser = User::query()->find($buyerUserId);
+            if (! $buyerUser) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Usuário comprador não encontrado.',
+                ], 422);
+            }
+        }
+
+        $numbers = $this->sanitizeNumbers($raffle, true);
+        $index = collect($numbers)->search(fn (array $item): bool => (int) ($item['number'] ?? 0) === $number);
+
+        if ($index === false) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Número não encontrado para esta rifa.',
+            ], 422);
+        }
+
+        $current = $numbers[$index];
+        $currentStatus = (string) ($current['status'] ?? 'available');
+
+        if ($currentStatus === 'occupied') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Este ponto já está marcado como vendido.',
+            ], 422);
+        }
+
+        $buyerName = $buyerUser
+            ? (string) ($buyerUser->full_name ?? $buyerUser->name ?? $buyerUser->email ?? '')
+            : trim((string) ($validated['buyerName'] ?? ''));
+
+        if ($buyerName === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Informe o nome do comprador ou selecione um usuário.',
+            ], 422);
+        }
+
+        $buyerPhone = $buyerUser
+            ? (string) ($buyerUser->phone ?? ($validated['buyerPhone'] ?? ''))
+            : trim((string) ($validated['buyerPhone'] ?? ''));
+
+        $numbers[$index] = [
+            ...$current,
+            'status' => 'occupied',
+            'reservationPaymentStatus' => 'approved',
+            'approvedAt' => now()->toISOString(),
+            'approvedBy' => (int) $request->user()->id,
+            'buyerUserId' => $buyerUser?->id,
+            'buyerName' => $buyerName,
+            'buyerPhone' => $buyerPhone !== '' ? $buyerPhone : null,
+            'soldByAdmin' => true,
+        ];
+
+        $raffle->numbers = array_values($numbers);
+        $raffle->tickets_sold = min((int) $raffle->tickets_available, (int) $raffle->tickets_sold + 1);
+        $raffle->current = ((int) $raffle->tickets_sold) * (float) $raffle->ticket_price;
+        $raffle->save();
+
+        if ($buyerUser !== null) {
+            $reservation = RaffleReservation::where('raffle_id', $raffle->id)
+                ->where('number', $number)
+                ->first();
+
+            if ($reservation !== null) {
+                $reservation->user_id = $buyerUser->id;
+                $reservation->status = 'paid';
+                $reservation->save();
+            } else {
+                RaffleReservation::create([
+                    'user_id' => $buyerUser->id,
+                    'raffle_id' => $raffle->id,
+                    'number' => $number,
+                    'status' => 'paid',
+                ]);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Ponto marcado como vendido com sucesso.',
             'data' => $this->formatRaffle($raffle->fresh()),
         ]);
     }
