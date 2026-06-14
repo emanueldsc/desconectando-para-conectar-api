@@ -53,6 +53,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/content/posts', [AdminBlogController::class, 'index']);
         Route::post('/content/posts', [AdminBlogController::class, 'store']);
         Route::post('/content/posts/featured-image', [AdminBlogController::class, 'uploadFeaturedImage']);
+        Route::delete('/content/posts/image', [AdminBlogController::class, 'deleteImage']);
         Route::put('/content/posts/{post}', [AdminBlogController::class, 'update'])->whereNumber('post');
         Route::delete('/content/posts/{post}', [AdminBlogController::class, 'destroy'])->whereNumber('post');
         Route::post('/content/posts/{post}/delete', [AdminBlogController::class, 'destroyByPost'])->whereNumber('post');

@@ -186,6 +186,28 @@ class AdminBlogController extends Controller
         ]);
     }
 
+    public function deleteImage(Request $request): JsonResponse
+    {
+        if (! $this->canManageContent($request)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Usuário sem permissão para gerenciar conteúdo',
+                'code' => 'FORBIDDEN',
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'url' => ['required', 'string'],
+        ]);
+
+        $this->deletePreviousImage($validated['url']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Imagem excluída com sucesso',
+        ]);
+    }
+
     private function canManageContent(Request $request): bool
     {
         $role = (string) ($request->user()?->role ?? '');
