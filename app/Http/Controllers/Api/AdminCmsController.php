@@ -69,6 +69,9 @@ class AdminCmsController extends Controller
             'realitySection.publicationIds' => ['nullable', 'array', 'max:4'],
             'realitySection.publicationIds.*' => ['integer', 'distinct', 'exists:blog_posts,id'],
             'monthlyGoal' => ['required', 'numeric', 'min:0', 'max:999999999.99'],
+            'pix' => ['required', 'array'],
+            'pix.key' => ['nullable', 'string', 'max:150'],
+            'pix.qrcodeUrl' => ['nullable', 'string', 'max:2048'],
         ]);
 
         $settings = $this->resolveSettings();
@@ -87,6 +90,7 @@ class AdminCmsController extends Controller
             'hero_button' => $validated['heroButton'],
             'home_reality' => $validated['realitySection'],
             'monthly_goal' => $validated['monthlyGoal'],
+            'pix' => $validated['pix'],
         ]);
 
         return response()->json([
@@ -173,6 +177,10 @@ class AdminCmsController extends Controller
                     'publicationIds' => [],
                 ],
                 'monthly_goal' => 20000,
+                'pix' => [
+                    'key' => '',
+                    'qrcodeUrl' => '',
+                ],
             ]
         );
     }
@@ -225,6 +233,10 @@ class AdminCmsController extends Controller
                 'publicationIds' => [],
             ],
             'monthlyGoal' => (float) ($settings->monthly_goal ?? 20000),
+            'pix' => $settings->pix ?? [
+                'key' => '',
+                'qrcodeUrl' => '',
+            ],
             'updatedAt' => $settings->updated_at?->toISOString(),
         ];
     }

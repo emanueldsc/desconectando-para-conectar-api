@@ -24,6 +24,7 @@ Route::prefix('public')->group(function (): void {
     Route::post('/raffles/{raffle}/numbers/{number}/receipt', [RaffleController::class, 'uploadReservationReceipt'])->whereNumber('raffle')->whereNumber('number');
     Route::get('/raffles/{id}', [RaffleController::class, 'show'])->whereNumber('id');
     Route::get('/raffles/{slug}', [RaffleController::class, 'showBySlug'])->where('slug', '[A-Za-z0-9\-]+');
+    Route::get('/pix', [PublicController::class, 'getPix']);
 });
 
 Route::prefix('auth')->group(function (): void {

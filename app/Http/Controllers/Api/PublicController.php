@@ -52,6 +52,31 @@ class PublicController extends Controller
         ]);
     }
 
+    public function getPix(): JsonResponse
+    {
+        $cms = CmsSetting::query()->first();
+        $pix = is_array($cms?->pix) ? $cms->pix : [];
+
+        $key = (string) ($pix['key'] ?? '');
+        $qrcodeUrl = (string) ($pix['qrcodeUrl'] ?? '');
+
+        if ($key === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'PIX não configurado',
+                'code' => 'PIX_NOT_CONFIGURED',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'key' => $key,
+                'qrcodeUrl' => $qrcodeUrl,
+            ],
+        ]);
+    }
+
     private function hero(?CmsSetting $cms): array
     {
         $banners = is_array($cms?->banners) ? $cms->banners : [];
