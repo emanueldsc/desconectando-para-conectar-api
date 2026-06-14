@@ -15,6 +15,8 @@
  * - JWT para autenticação
  */
 
+namespace App;
+
 // ================================================
 // 1. ESTRUTURA BÁSICA EM LARAVEL
 // ================================================
@@ -541,28 +543,36 @@ class AuthenticateToken
 // ================================================
 
 // app/Exceptions/Handler.php
-public function render($request, Throwable $exception)
+namespace App\Exceptions;
+
+use Throwable;
+use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+
+class Handler extends ExceptionHandler
 {
-    if ($request->expectsJson()) {
-        if ($exception instanceof \Illuminate\Database\Eloquent\ModelNotFoundException) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Recurso não encontrado',
-                'code' => 'NOT_FOUND'
-            ], 404);
+    public function render($request, Throwable $exception)
+    {
+        if ($request->expectsJson()) {
+            if ($exception instanceof \Illuminate\Database\Eloquent\ModelNotFoundException) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Recurso não encontrado',
+                    'code' => 'NOT_FOUND'
+                ], 404);
+            }
+
+            if ($exception instanceof \Illuminate\Validation\ValidationException) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erro de validação',
+                    'code' => 'VALIDATION_ERROR',
+                    'errors' => $exception->errors()
+                ], 422);
+            }
         }
 
-        if ($exception instanceof \Illuminate\Validation\ValidationException) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erro de validação',
-                'code' => 'VALIDATION_ERROR',
-                'errors' => $exception->errors()
-            ], 422);
-        }
+        return parent::render($request, $exception);
     }
-
-    return parent::render($request, $exception);
 }
 
 // ================================================
@@ -572,17 +582,19 @@ public function render($request, Throwable $exception)
 // Cache home page por 1 hora
 cache()->remember('home_page_data', 3600, function () {
     return [
-        'hero' => [...],
-        'featuredRaffles' => [...],
-        'statistics' => [...]
+        'hero' => [],
+        'featuredRaffles' => [],
+        'statistics' => []
     ];
 });
 
 // Cache blog lista por 30 minutos
+$page = 1;
+$limit = 10;
 cache()->remember("blog_page_{$page}_{$limit}", 1800, function () {
     return [
-        'data' => [...],
-        'pagination' => [...]
+        'data' => [],
+        'pagination' => []
     ];
 });
 
